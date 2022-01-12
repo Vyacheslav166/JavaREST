@@ -6,6 +6,11 @@ import com.game.entity.Profession;
 import com.game.entity.Race;
 import com.game.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -16,6 +21,12 @@ import java.util.List;
 @Service
 public class PlayerServiceImpl implements PlayerService{
 
+    private static final int MAX_LENGTH_NAME = 12;
+    private static final int MAX_LENGTH_TITLE = 30;
+    private static final int MAX_EXPERIENCE = 10000000;
+    private static final int MIN_BIRTHDAY = 2000;
+    private static final int MAX_BIRTHDAY = 3000;
+
     private PlayerRepository playerRepository;
 
     public PlayerServiceImpl(){
@@ -23,17 +34,50 @@ public class PlayerServiceImpl implements PlayerService{
 
     @Autowired
     public PlayerServiceImpl(PlayerRepository playerRepository) {
-        super();
         this.playerRepository = playerRepository;
     }
 
+    //создание игрока
+    @Override
+    public Player create(Player player) {
+        isPlayerValid(player);
+
+        if(player.getBanned() == null)
+            player.setBanned(false);
+
+        player.setLevel(getCurrentLevel(player.getExperience()));
+        player.setUntilNextLevel(getExperienceUntilNextLevel(player.getExperience(), player.getLevel()));
+
+        return playerRepository.saveAndFlush(player);
+    }
+
+    //получение игрока по id
     @Override
     public Player getById(Long id) {
-        return playerRepository.getOne(id);
+        isIdValid(id);
+        Player player;
+        try {
+            player = playerRepository.getOne(id);
+        } catch (Exception e) {
+            throw new NotFoundException("Player not found!");
+        }
+        return player;
+    }
+
+    //получение всех игроков по фильтрам
+    @Override
+    public Page<Player> getAll(Specification<Player> specification, Pageable pageable) {
+        return playerRepository.findAll(specification, pageable);
     }
 
     @Override
-    public List<Player> getAll(
+    public Long getCount(Specification<Player> specification) {
+        return playerRepository.count(specification);
+    }
+
+
+    //получение страницы с игроками
+    public Page<Player> getPage(
             String name,
             String title,
             Race race,
@@ -44,11 +88,12 @@ public class PlayerServiceImpl implements PlayerService{
             Integer minExperience,
             Integer maxExperience,
             Integer minLevel,
-            Integer maxLevel
+            Integer maxLevel,
+            Pageable pageable
     ) {
         final Date afterDate = after == null ? null : new Date(after);
         final Date beforeDate = before == null ? null : new Date(before);
-        final List<Player> playerList = new ArrayList<>();
+        List<Player> playerList = new ArrayList<>();
         playerRepository.findAll().forEach((player) -> {
             if (name != null && !player.getName().contains(name)) return;
             if (title != null && !player.getTitle().contains(title)) return;
@@ -64,22 +109,11 @@ public class PlayerServiceImpl implements PlayerService{
 
             playerList.add(player);
         });
-        return playerList;
+        return playerRepository.findAll(playerList, pageable);
     }
 
-    @Override
-    public List<Player> getPage(List<Player> players, Integer pageNumber, Integer pageSize) {
-        final Integer page = pageNumber == null ? 0 : pageNumber;
-        final Integer size = pageSize == null ? 0 : pageSize;
-        int from = page * size;
-        int to = from + (int)size;
-        if (to > players.size()) to = players.size();
-
-        return players.subList(from, to);
-    }
-
-    @Override
-    public List<Player> sortPlayers(List<Player> players, PlayerOrder order) {
+    //сортировка игроков
+        public List<Player> sortPlayers(List<Player> players, PlayerOrder order) {
         if (order != null) {
             players.sort((player1, player2) -> {
                 switch (order) {
@@ -94,107 +128,144 @@ public class PlayerServiceImpl implements PlayerService{
         return players;
     }
 
+    //изменение игрока
     @Override
-    public boolean isPlayerValid(Player player) {
-        return player != null && isNameValid(player.getName()) && isTitleValid(player.getTitle())
-                && isBirthdayValid(player.getBirthday()) && isExperienceValid(player.getExperience());
-    }
-
-    @Override
-    public Player save(Player player) {
-        return playerRepository.save(player);
-    }
-
-    @Override
-    public Player update(Player oldPlayer, Player newPlayer) throws IllegalArgumentException {
-        boolean shouldChangeLevel = false;
+    public Player update(Long id, Player newPlayer) {
+        Player oldPlayer = getById(id);
 
         final String name = newPlayer.getName();
         if (name != null) {
-            if (isNameValid(name)) {
-                oldPlayer.setName(name);
-            } else {throw new IllegalArgumentException();}
+            isNameValid(name);
+            oldPlayer.setName(name);
         }
+
         final String title = newPlayer.getTitle();
         if (title != null) {
-            if (isTitleValid(title)) {
-                oldPlayer.setTitle(title);
-            } else {throw new IllegalArgumentException();}
+            isTitleValid(title);
+            oldPlayer.setTitle(title);
         }
-        if (newPlayer.getRace() != null) {
-            oldPlayer.setRace(newPlayer.getRace());
+
+        final Race race = newPlayer.getRace();
+        if (race != null) {
+            isRaceValid(race);
+            oldPlayer.setRace(race);
         }
-        if (newPlayer.getProfession() != null) {
-            oldPlayer.setProfession(newPlayer.getProfession());
+
+        final Profession profession = newPlayer.getProfession();
+        if (profession != null) {
+            isProfessionValid(profession);
+            oldPlayer.setProfession(profession);
         }
+
         final Date birthday = newPlayer.getBirthday();
         if (birthday != null) {
-            if (isBirthdayValid(birthday)) {
-                oldPlayer.setBirthday(birthday);
-                shouldChangeLevel = true;
-            } else {throw new IllegalArgumentException();}
+            isBirthdayValid(birthday);
+            oldPlayer.setBirthday(birthday);
         }
+
         final Integer experience = newPlayer.getExperience();
         if (experience != null) {
-            if (isExperienceValid(experience)) {
-                oldPlayer.setExperience(experience);
-                shouldChangeLevel = true;
-            } else {throw new IllegalArgumentException();}
+            isExperienceValid(experience);
+            oldPlayer.setExperience(experience);
         }
+
         if (newPlayer.getBanned() != null) {
             oldPlayer.setBanned(newPlayer.getBanned());
-            shouldChangeLevel = true;
         }
-        if (shouldChangeLevel) {
-            final Integer level = Math.toIntExact(
-                    Math.round((Math.sqrt(2500 + 200 * oldPlayer.getExperience()) - 50) / 100)
-            );
-        }
-        playerRepository.save(oldPlayer);
-        return oldPlayer;
+
+        oldPlayer.setLevel(getCurrentLevel(oldPlayer.getExperience()));
+        oldPlayer.setUntilNextLevel(getExperienceUntilNextLevel(oldPlayer.getExperience(), oldPlayer.getLevel()));
+
+        return playerRepository.saveAndFlush(oldPlayer);
     }
 
+    //удаление игрока
     @Override
     public void delete(Long id) {
         playerRepository.deleteById(id);
     }
 
-    private boolean isExperienceValid(Integer value) {
-        final Integer maxValue = 10_000_000;
-        final Integer minValue = 0;
-        return value >= minValue && value <= maxValue;
+    //проверка правильности данных игрока
+    public void isPlayerValid(Player player) {
+        if(player == null)
+            throw new BadRequestException("Invalid player");
+        isIdValid(player.getId());
+        isExperienceValid(player.getExperience());
+        isNameValid(player.getName());
+        isTitleValid(player.getTitle());
+        isRaceValid(player.getRace());
+        isProfessionValid(player.getProfession());
+        isBirthdayValid(player.getBirthday());
     }
 
-    private boolean isNameValid(String value) {
-        final int maxStringLength = 12;
-        return value != null && !value.isEmpty() && value.length() <= maxStringLength;
+    //проверка id
+    private void isIdValid(Long value) {
+        if(value <= 0)
+            throw new BadRequestException("Invalid ID");
+    }
+    //проверка значений опыта
+    private void isExperienceValid(Integer value) {
+       if(value < 0 || value > MAX_EXPERIENCE)
+           throw new BadRequestException("Invalid experience");
     }
 
-    private boolean isTitleValid(String value) {
-        final int maxStringLength = 30;
-        return value != null && !value.isEmpty() && value.length() <= maxStringLength;
+    //проверка имени
+    private void isNameValid(String value) {
+        if(value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
+            throw new BadRequestException("Invalid name");
     }
 
-    private boolean isBirthdayValid(Date date) {
-        final Date startDate = getDateForrYear(2000);
-        final Date finishDate = getDateForrYear(3000);
-        return date != null && date.after(startDate) && date.before(finishDate);
+    //проверка титула
+    private void isTitleValid(String value) {
+        if(value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
+            throw new BadRequestException("Invalid title");
     }
 
-    private Date getDateForrYear(int year) {
+    //проверка расы
+    private void isRaceValid(Race value) {
+        if(value == null)
+            throw new BadRequestException("Invalid race");
+    }
+
+    //проверка профессии
+    private void isProfessionValid(Profession value) {
+        if(value == null)
+            throw new BadRequestException("Invalid profession");
+    }
+
+    //проверка даты рождения
+    private void isBirthdayValid(Date date) {
+        if(date == null)
+            throw new BadRequestException("Invalid birthday");
+
+        final Date startDate = getDateForYear(MIN_BIRTHDAY);
+        final Date finishDate = getDateForYear(MAX_BIRTHDAY);
+        if (date.before(startDate) || date.after(finishDate))
+            throw new BadRequestException("Birthday is not included");
+    }
+
+    //дата по введенному году
+    private Date getDateForYear(int year) {
         final Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         return calendar.getTime();
     }
 
+    //год по введенной дате
     private int getYearFromDate(Date date) {
         final Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
         return calendar.get(Calendar.YEAR);
     }
 
-    private double round(double value) {
-        return Math.round(value + 100) / 100D;
+    //возвращает текущий уровень игрока
+    public Integer getCurrentLevel(Integer experience) {
+        return ((int)Math.sqrt(2500 + 200 * experience) - 50) / 100;
+    }
+
+    //опыт до следующего уровня
+    public Integer getExperienceUntilNextLevel(Integer experience, Integer level) {
+        return 50 * (level + 1) * (level + 2) - experience;
     }
 
 }

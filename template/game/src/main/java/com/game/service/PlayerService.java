@@ -4,36 +4,23 @@ import com.game.controller.PlayerOrder;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
 
 public interface PlayerService {
 
-    Player save(Player player);
-
-    Player update(Player oldPlayer, Player newPlayer) throws IllegalArgumentException;
-
-    void delete(Long id);
+    Player create(Player player);
 
     Player getById(Long id);
 
-    List<Player> getAll(
-            String name,
-            String title,
-            Race race,
-            Profession profession,
-            Long after,
-            Long before,
-            Boolean banned,
-            Integer minExperience,
-            Integer maxExperience,
-            Integer minLevel,
-            Integer maxLevel
-    );
+    Page<Player> getAll(Specification<Player> specification, Pageable pageable);
 
-    List<Player> getPage(List<Player> players, Integer pageNumber, Integer PageSize);
+    Long getCount(Specification<Player> specification);
 
-    List<Player> sortPlayers(List<Player> players, PlayerOrder order);
+    Player update(Long id, Player oldPlayer) throws IllegalArgumentException;
 
-    boolean isPlayerValid(Player player);
+    void delete(Long id);
 }

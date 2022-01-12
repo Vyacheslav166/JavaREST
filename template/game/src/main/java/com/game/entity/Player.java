@@ -3,41 +3,44 @@ package com.game.entity;
 
 import javax.persistence.*;
 import java.util.Date;
+import java.util.Objects;
 
 @Entity
-@Table(name = "player")
 public class Player extends BaseEntity {
 
-    @Column(name = "name")
     private String name;
 
-    @Column(name = "title")
     private String title;
 
-    @Column(name = "race")
+    @Enumerated(EnumType.STRING)
     private Race race;
 
-    @Column(name = "profession")
+    @Enumerated(EnumType.STRING)
     private Profession profession;
 
-    @Column(name = "experience")
     private Integer experience;
 
-    @Column(name = "level")
     private Integer level;
 
-    @Column(name = "untilNextLevel")
     private Integer untilNextLevel;
 
-    @Column(name = "birthday")
     private Date birthday;
 
-    @Column(name = "banned")
     private Boolean banned;
 
-    protected Player() {}
+    //конструкторы
+    protected Player() {
+    }
 
-    protected Player(String name, String title, Race race, Profession profession, Integer experience, Integer level, Integer untilNextLevel, Date birthday, Boolean banned) {
+    protected Player(String name,
+                     String title,
+                     Race race,
+                     Profession profession,
+                     Integer experience,
+                     Integer level,
+                     Integer untilNextLevel,
+                     Date birthday,
+                     Boolean banned) {
         this.name = name;
         this.title = title;
         this.race = race;
@@ -49,6 +52,7 @@ public class Player extends BaseEntity {
         this.banned = banned;
     }
 
+    //геттеры и сеттеры
     public String getName() {
         return name;
     }
@@ -121,6 +125,7 @@ public class Player extends BaseEntity {
         this.banned = banned;
     }
 
+    //toString, equals, hashCode
     @Override
     public String toString() {
         return "Player{" +
@@ -134,5 +139,18 @@ public class Player extends BaseEntity {
                 ", birthday=" + birthday +
                 ", banned=" + banned +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Player player = (Player) o;
+        return Objects.equals(name, player.name) && Objects.equals(title, player.title) && race == player.race && profession == player.profession && Objects.equals(experience, player.experience) && Objects.equals(level, player.level) && Objects.equals(untilNextLevel, player.untilNextLevel) && Objects.equals(birthday, player.birthday) && Objects.equals(banned, player.banned);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, title, race, profession, experience, level, untilNextLevel, birthday, banned);
     }
 }
