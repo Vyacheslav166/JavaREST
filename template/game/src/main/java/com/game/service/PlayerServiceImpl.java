@@ -42,7 +42,7 @@ public class PlayerServiceImpl implements PlayerService{
     public Player create(Player player) {
         isPlayerValid(player);
 
-        if(player.getBanned() == null)
+        if (player.getBanned() == null)
             player.setBanned(false);
 
         player.setLevel(getCurrentLevel(player.getExperience()));
@@ -73,59 +73,6 @@ public class PlayerServiceImpl implements PlayerService{
     @Override
     public Long getCount(Specification<Player> specification) {
         return playerRepository.count(specification);
-    }
-
-
-    //получение страницы с игроками
-    public Page<Player> getPage(
-            String name,
-            String title,
-            Race race,
-            Profession profession,
-            Long after,
-            Long before,
-            Boolean banned,
-            Integer minExperience,
-            Integer maxExperience,
-            Integer minLevel,
-            Integer maxLevel,
-            Pageable pageable
-    ) {
-        final Date afterDate = after == null ? null : new Date(after);
-        final Date beforeDate = before == null ? null : new Date(before);
-        List<Player> playerList = new ArrayList<>();
-        playerRepository.findAll().forEach((player) -> {
-            if (name != null && !player.getName().contains(name)) return;
-            if (title != null && !player.getTitle().contains(title)) return;
-            if (race != null && player.getRace() != race) return;
-            if (profession != null && player.getProfession() != profession) return;
-            if (afterDate != null && player.getBirthday().before(afterDate)) return;
-            if (beforeDate != null && player.getBirthday().after(beforeDate)) return;
-            if (banned != null && player.getBanned().booleanValue() != banned.booleanValue()) return;
-            if (minExperience != null && player.getExperience().compareTo(minExperience) < 0) return;
-            if (maxExperience != null && player.getExperience().compareTo(maxExperience) > 0) return;
-            if (minLevel != null && player.getLevel().compareTo(minLevel) < 0) return;
-            if (maxLevel != null && player.getLevel().compareTo(maxLevel) > 0) return;
-
-            playerList.add(player);
-        });
-        return playerRepository.findAll(playerList, pageable);
-    }
-
-    //сортировка игроков
-        public List<Player> sortPlayers(List<Player> players, PlayerOrder order) {
-        if (order != null) {
-            players.sort((player1, player2) -> {
-                switch (order) {
-                    case ID: return player1.getId().compareTo(player2.getId());
-                    case LEVEL: return player1.getLevel().compareTo(player2.getLevel());
-                    case EXPERIENCE: return player1.getExperience().compareTo(player2.getExperience());
-                    case BIRTHDAY: return player1.getBirthday().compareTo(player2.getBirthday());
-                    default: return 0;
-                }
-            });
-        }
-        return players;
     }
 
     //изменение игрока
@@ -187,7 +134,7 @@ public class PlayerServiceImpl implements PlayerService{
 
     //проверка правильности данных игрока
     public void isPlayerValid(Player player) {
-        if(player == null)
+        if (player == null)
             throw new BadRequestException("Invalid player");
         isIdValid(player.getId());
         isExperienceValid(player.getExperience());
@@ -200,42 +147,42 @@ public class PlayerServiceImpl implements PlayerService{
 
     //проверка id
     private void isIdValid(Long value) {
-        if(value <= 0)
+        if (value <= 0)
             throw new BadRequestException("Invalid ID");
     }
     //проверка значений опыта
     private void isExperienceValid(Integer value) {
-       if(value < 0 || value > MAX_EXPERIENCE)
+       if (value < 0 || value > MAX_EXPERIENCE)
            throw new BadRequestException("Invalid experience");
     }
 
     //проверка имени
     private void isNameValid(String value) {
-        if(value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
+        if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
             throw new BadRequestException("Invalid name");
     }
 
     //проверка титула
     private void isTitleValid(String value) {
-        if(value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
+        if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
             throw new BadRequestException("Invalid title");
     }
 
     //проверка расы
     private void isRaceValid(Race value) {
-        if(value == null)
+        if (value == null)
             throw new BadRequestException("Invalid race");
     }
 
     //проверка профессии
     private void isProfessionValid(Profession value) {
-        if(value == null)
+        if (value == null)
             throw new BadRequestException("Invalid profession");
     }
 
     //проверка даты рождения
     private void isBirthdayValid(Date date) {
-        if(date == null)
+        if (date == null)
             throw new BadRequestException("Invalid birthday");
 
         final Date startDate = getDateForYear(MIN_BIRTHDAY);
@@ -267,5 +214,96 @@ public class PlayerServiceImpl implements PlayerService{
     public Integer getExperienceUntilNextLevel(Integer experience, Integer level) {
         return 50 * (level + 1) * (level + 2) - experience;
     }
+
+    //написание запросов по спецификациям
+    public Specification<Player> findAllByNameLike(String name) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("name"), "%" + name + "%"));
+    }
+
+    public Specification<Player> findAllByTitleLike(String title) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("title"), "%" + title + "%"));
+    }
+
+    public Specification<Player> findAllByRaceLike(Race race) {
+        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("race"), "%" + race + "%"));
+    }
+
+    public Specification<Player> findAllByProfessionLike(Profession profession) {
+        return ((root, query, criteriaBuilder) ->
+                criteriaBuilder.like(root.get("profession"), "%" + profession + "%"));
+    }
+
+    public Specification<Player> findAllByBirtdayLike(Long after, Long before) {
+        return ((root, query, criteriaBuilder) -> {
+            if (after == null && before == null)
+                return null;
+
+            if (after == null)
+                return criteriaBuilder.lessThanOrEqualTo(root.get("birthday"), new Date(before));
+
+            if (before == null)
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("birthday"), new Date(after));
+
+            return criteriaBuilder.between(root.get("birthday"), new Date(after), new Date(before));
+        });
+    }
+
+    public Specification<Player> findAllByBannedLike(Boolean isBanned) {
+        return ((root, query, criteriaBuilder) -> {
+            if (isBanned == null)
+                return null;
+
+            if (isBanned)
+                return criteriaBuilder.isTrue(root.get("banned"));
+
+            return criteriaBuilder.isFalse(root.get("banned"));
+        });
+    }
+
+    public Specification<Player> findAllByExperienceLike(Integer min, Integer max) {
+        return ((root, query, criteriaBuilder) -> {
+            if (min == null && max == null)
+                return null;
+
+            if (min == null)
+                return criteriaBuilder.lessThanOrEqualTo(root.get("experience"), max);
+
+            if (max == null)
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("experience"), min);
+
+            return criteriaBuilder.between(root.get("experience"), min, max);
+        });
+    }
+
+    public Specification<Player> findAllByLevelLike(Integer min, Integer max) {
+        return ((root, query, criteriaBuilder) -> {
+            if (min == null && max == null)
+                return null;
+
+            if (min == null)
+                return criteriaBuilder.lessThanOrEqualTo(root.get("level"), max);
+
+            if (max == null)
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("level"), min);
+
+            return criteriaBuilder.between(root.get("level"), min, max);
+        });
+    }
+
+    public Specification<Player> findAllByUntilNextLevelLike(Integer min, Integer max) {
+        return ((root, query, criteriaBuilder) -> {
+            if (min == null && max == null)
+                return null;
+
+            if (min == null)
+                return criteriaBuilder.lessThanOrEqualTo(root.get("untilNextLevel"), max);
+
+            if (max == null)
+                return criteriaBuilder.greaterThanOrEqualTo(root.get("untilNextLevel"), min);
+
+            return criteriaBuilder.between(root.get("untilNextLevel"), min, max);
+        });
+    }
+
 
 }
