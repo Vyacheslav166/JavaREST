@@ -6,7 +6,10 @@ import java.util.Date;
 import java.util.Objects;
 
 @Entity
-public class Player extends BaseEntity {
+public class Player {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private String name;
 
@@ -32,15 +35,15 @@ public class Player extends BaseEntity {
     protected Player() {
     }
 
-    protected Player(String name,
-                     String title,
-                     Race race,
-                     Profession profession,
-                     Integer experience,
-                     Integer level,
-                     Integer untilNextLevel,
-                     Date birthday,
-                     Boolean banned) {
+    public Player(String name,
+                  String title,
+                  Race race,
+                  Profession profession,
+                  Date birthday,
+                  Boolean banned,
+                  Integer experience,
+                  Integer level,
+                  Integer untilNextLevel) {
         this.name = name;
         this.title = title;
         this.race = race;
@@ -53,6 +56,14 @@ public class Player extends BaseEntity {
     }
 
     //геттеры и сеттеры
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
     public String getName() {
         return name;
     }
@@ -146,7 +157,15 @@ public class Player extends BaseEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Player player = (Player) o;
-        return Objects.equals(name, player.name) && Objects.equals(title, player.title) && race == player.race && profession == player.profession && Objects.equals(experience, player.experience) && Objects.equals(level, player.level) && Objects.equals(untilNextLevel, player.untilNextLevel) && Objects.equals(birthday, player.birthday) && Objects.equals(banned, player.banned);
+        return Objects.equals(name, player.name) &&
+                Objects.equals(title, player.title) &&
+                race == player.race &&
+                profession == player.profession &&
+                Objects.equals(experience, player.experience) &&
+                Objects.equals(level, player.level) &&
+                Objects.equals(untilNextLevel, player.untilNextLevel) &&
+                Objects.equals(birthday, player.birthday) &&
+                Objects.equals(banned, player.banned);
     }
 
     @Override
