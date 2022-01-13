@@ -24,13 +24,14 @@ public class PlayerServiceImpl implements PlayerService{
 
     private PlayerRepository playerRepository;
 
+    @Autowired
     public PlayerServiceImpl(PlayerRepository playerRepository) {
         this.playerRepository = playerRepository;
     }
 
     //создание игрока
     @Override
-    public Player create(Player player) {
+    public Player createPlayer(Player player) {
         isPlayerValid(player);
 
         if (player.getBanned() == null)
@@ -39,37 +40,32 @@ public class PlayerServiceImpl implements PlayerService{
         player.setLevel(getCurrentLevel(player.getExperience()));
         player.setUntilNextLevel(getExperienceUntilNextLevel(player.getExperience(), player.getLevel()));
 
-        return playerRepository.saveAndFlush(player);
+        return playerRepository.save(player);
     }
 
     //получение игрока по id
     @Override
-    public Player getById(Long id) {
+    public Player getPlayerById(Long id) {
         isIdValid(id);
-        Player player;
-        try {
-            player = playerRepository.getOne(id);
-        } catch (Exception e) {
-            throw new NotFoundException("Player not found!");
-        }
-        return player;
+        return playerRepository.findById(id).orElseThrow(() ->
+            new NotFoundException("Player not found!"));
     }
 
     //получение всех игроков по фильтрам
     @Override
-    public Page<Player> getAll(Specification<Player> specification, Pageable pageable) {
+    public Page<Player> getAllPlayers(Specification<Player> specification, Pageable pageable) {
         return playerRepository.findAll(specification, pageable);
     }
 
     @Override
-    public Long getCount(Specification<Player> specification) {
+    public Long getPlayersCount(Specification<Player> specification) {
         return playerRepository.count(specification);
     }
 
     //изменение игрока
     @Override
-    public Player update(Long id, Player newPlayer) {
-        Player oldPlayer = getById(id);
+    public Player updatePlayer(Long id, Player newPlayer) {
+        Player oldPlayer = getPlayerById(id);
 
         final String name = newPlayer.getName();
         if (name != null) {
@@ -119,15 +115,16 @@ public class PlayerServiceImpl implements PlayerService{
 
     //удаление игрока
     @Override
-    public void delete(Long id) {
-        playerRepository.deleteById(id);
+    public Player deletePlayer(Long id) {
+        Player player = getPlayerById(id);
+        playerRepository.delete(player);
+        return player;
     }
 
     //проверка правильности данных игрока
     public void isPlayerValid(Player player) {
         if (player == null)
             throw new BadRequestException("Invalid player");
-        isIdValid(player.getId());
         isExperienceValid(player.getExperience());
         isNameValid(player.getName());
         isTitleValid(player.getTitle());
@@ -137,42 +134,42 @@ public class PlayerServiceImpl implements PlayerService{
     }
 
     //проверка id
-    private void isIdValid(Long value) {
+    public void isIdValid(Long value) {
         if (value <= 0)
             throw new BadRequestException("Invalid ID");
     }
     //проверка значений опыта
-    private void isExperienceValid(Integer value) {
+    public void isExperienceValid(Integer value) {
        if (value < 0 || value > MAX_EXPERIENCE)
            throw new BadRequestException("Invalid experience");
     }
 
     //проверка имени
-    private void isNameValid(String value) {
+    public void isNameValid(String value) {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
             throw new BadRequestException("Invalid name");
     }
 
     //проверка титула
-    private void isTitleValid(String value) {
+    public void isTitleValid(String value) {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
             throw new BadRequestException("Invalid title");
     }
 
     //проверка расы
-    private void isRaceValid(Race value) {
+    public void isRaceValid(Race value) {
         if (value == null)
             throw new BadRequestException("Invalid race");
     }
 
     //проверка профессии
-    private void isProfessionValid(Profession value) {
+    public void isProfessionValid(Profession value) {
         if (value == null)
             throw new BadRequestException("Invalid profession");
     }
 
     //проверка даты рождения
-    private void isBirthdayValid(Date date) {
+    public void isBirthdayValid(Date date) {
         if (date == null)
             throw new BadRequestException("Invalid birthday");
 
@@ -183,14 +180,14 @@ public class PlayerServiceImpl implements PlayerService{
     }
 
     //дата по введенному году
-    private Date getDateForYear(int year) {
+    public Date getDateForYear(int year) {
         final Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         return calendar.getTime();
     }
 
     //год по введенной дате
-    private int getYearFromDate(Date date) {
+    public int getYearFromDate(Date date) {
         final Calendar calendar = Calendar.getInstance();
         calendar.setTime(date);
         return calendar.get(Calendar.YEAR);
@@ -208,24 +205,27 @@ public class PlayerServiceImpl implements PlayerService{
 
     //написание запросов по спецификациям
     public Specification<Player> findAllByNameLike(String name) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("name"), "%" + name + "%"));
+        return (root, query, criteriaBuilder) ->
+            name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
 
     public Specification<Player> findAllByTitleLike(String title) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("title"), "%" + title + "%"));
+        return (root, query, criteriaBuilder) ->
+            title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
     }
 
     public Specification<Player> findAllByRaceLike(Race race) {
-        return ((root, query, criteriaBuilder) -> criteriaBuilder.like(root.get("race"), "%" + race + "%"));
+        return (root, query, criteriaBuilder) ->
+            race == null ? null : criteriaBuilder.equal(root.get("race"), race);
     }
 
     public Specification<Player> findAllByProfessionLike(Profession profession) {
-        return ((root, query, criteriaBuilder) ->
-                criteriaBuilder.like(root.get("profession"), "%" + profession + "%"));
+        return (root, query, criteriaBuilder) ->
+            profession == null ? null : criteriaBuilder.equal(root.get("profession"), profession);
     }
 
     public Specification<Player> findAllByBirtdayLike(Long after, Long before) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             if (after == null && before == null)
                 return null;
 
@@ -236,11 +236,11 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.greaterThanOrEqualTo(root.get("birthday"), new Date(after));
 
             return criteriaBuilder.between(root.get("birthday"), new Date(after), new Date(before));
-        });
+        };
     }
 
     public Specification<Player> findAllByBannedLike(Boolean isBanned) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             if (isBanned == null)
                 return null;
 
@@ -248,11 +248,11 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.isTrue(root.get("banned"));
 
             return criteriaBuilder.isFalse(root.get("banned"));
-        });
+        };
     }
 
     public Specification<Player> findAllByExperienceLike(Integer min, Integer max) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             if (min == null && max == null)
                 return null;
 
@@ -263,11 +263,11 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.greaterThanOrEqualTo(root.get("experience"), min);
 
             return criteriaBuilder.between(root.get("experience"), min, max);
-        });
+        };
     }
 
     public Specification<Player> findAllByLevelLike(Integer min, Integer max) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             if (min == null && max == null)
                 return null;
 
@@ -278,11 +278,11 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.greaterThanOrEqualTo(root.get("level"), min);
 
             return criteriaBuilder.between(root.get("level"), min, max);
-        });
+        };
     }
 
     public Specification<Player> findAllByUntilNextLevelLike(Integer min, Integer max) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, criteriaBuilder) -> {
             if (min == null && max == null)
                 return null;
 
@@ -293,8 +293,6 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.greaterThanOrEqualTo(root.get("untilNextLevel"), min);
 
             return criteriaBuilder.between(root.get("untilNextLevel"), min, max);
-        });
+        };
     }
-
-
 }

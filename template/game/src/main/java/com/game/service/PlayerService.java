@@ -9,15 +9,15 @@ import java.util.List;
 
 public interface PlayerService {
 
-    Player create(Player player);
+    Player createPlayer(Player player);
 
-    Player getById(Long id);
+    Player getPlayerById(Long id);
 
-    Page<Player> getAll(Specification<Player> specification, Pageable pageable);
+    Page<Player> getAllPlayers(Specification<Player> specification, Pageable pageable);
 
-    Long getCount(Specification<Player> specification);
+    Long getPlayersCount(Specification<Player> specification);
 
-    Player update(Long id, Player oldPlayer) throws IllegalArgumentException;
+    Player updatePlayer(Long id, Player oldPlayer) throws IllegalArgumentException;
 
-    void delete(Long id);
+    Player deletePlayer(Long id);
 }
