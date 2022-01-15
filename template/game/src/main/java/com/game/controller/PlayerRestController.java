@@ -3,6 +3,7 @@ package com.game.controller;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
+import com.game.exception.BadRequestException;
 import com.game.service.PlayerServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -10,7 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -25,20 +28,23 @@ public class PlayerRestController {
         this.playerService = playerService;
     }
 
-    //создание нового игрока
-    @PostMapping("/")
+    /**
+     * Создает игрока
+     *
+     * @param player данные игрока
+     * @return объект сгрока. <p>
+     * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
+    @PostMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Player> createPlayer(@RequestBody Player player){
-        playerService.createPlayer(player);
-
-        return ResponseEntity.ok(player);
+        return ResponseEntity.ok(playerService.createPlayer(player));
     }
 
     //получение игрока по id
-    @GetMapping("/{id}")
+    @GetMapping(value = "/{id}")
     @ResponseBody
-    public ResponseEntity<Player> getPlayerById(@PathVariable Long playerId) {
-        Player player = playerService.getPlayerById(playerId);
-        return  ResponseEntity.ok(player);
+    public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
+        return  ResponseEntity.ok(playerService.getPlayerById(id));
     }
     //получение всех игроков
     @GetMapping
@@ -100,19 +106,17 @@ public class PlayerRestController {
     }
 
     //изменение игрока по id
-    @PostMapping("/{id}")
+    @PostMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
+//    @PostMapping ("/{id}")
     @ResponseBody
-    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @RequestBody Player player) {
-        Player newplayer = playerService.updatePlayer(id, player);
-        return ResponseEntity.ok(player);
+    public ResponseEntity<Player> updatePlayer(@PathVariable Long id, @RequestBody @Validated Player player) {
+        return ResponseEntity.ok(playerService.updatePlayer(id, player));
     }
 
     //удаление игрока по id
     @DeleteMapping("/{id}")
     @ResponseBody
     public ResponseEntity<Player> deletePlayer(@PathVariable Long id) {
-        playerService.deletePlayer(id);
-
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok(playerService.deletePlayer(id));
     }
 }

@@ -3,6 +3,8 @@ package com.game.service;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
+import com.game.exception.BadRequestException;
+import com.game.exception.NotFoundException;
 import com.game.repository.PlayerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -134,24 +136,35 @@ public class PlayerServiceImpl implements PlayerService{
     }
 
     //проверка id
-    public void isIdValid(Long value) {
-        if (value <= 0)
+    public void isIdValid(Long value) throws BadRequestException {
+        if (value == null || value <= 0)
             throw new BadRequestException("Invalid ID");
     }
-    //проверка значений опыта
-    public void isExperienceValid(Integer value) {
-       if (value < 0 || value > MAX_EXPERIENCE)
+
+    /**
+     * проверка значений опыта
+     *
+     * @param value значение опыта
+     * @throws BadRequestException при значении опыта мсеньше 0 либо больше <code>MAX_EXPERIENCE</code>
+     */
+    public void isExperienceValid(Integer value) throws BadRequestException {
+       if (value == null || value < 0 || value > MAX_EXPERIENCE)
            throw new BadRequestException("Invalid experience");
     }
 
-    //проверка имени
-    public void isNameValid(String value) {
+    /**
+     * проверка имени
+     *
+     * @param value имя игрова
+     * @throws BadRequestException при не корректном значении имени игрока во входном параметре
+     */
+    public void isNameValid(String value) throws BadRequestException {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
             throw new BadRequestException("Invalid name");
     }
 
     //проверка титула
-    public void isTitleValid(String value) {
+    public void isTitleValid(String value) throws BadRequestException {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
             throw new BadRequestException("Invalid title");
     }

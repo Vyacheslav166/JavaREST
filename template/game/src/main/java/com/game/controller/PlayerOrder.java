@@ -1,5 +1,8 @@
 package com.game.controller;
 
+/**
+ * Справочник способов сортировки списка игроков
+ */
 public enum PlayerOrder {
     ID("id"), // default
     NAME("name"),
