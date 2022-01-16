@@ -3,14 +3,12 @@ package com.game.controller;
 import com.game.entity.Player;
 import com.game.entity.Profession;
 import com.game.entity.Race;
-import com.game.exception.BadRequestException;
 import com.game.service.PlayerServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -18,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/rest/players")
+@RequestMapping(path = "/rest/players")
 public class PlayerRestController {
 
     private final PlayerServiceImpl playerService;
@@ -47,7 +45,7 @@ public class PlayerRestController {
      * @return Объект игрока. <p>
      *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
      */
-    @GetMapping(value = "/{id}")
+    @GetMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
         return  ResponseEntity.ok(playerService.getPlayerById(id));
@@ -73,7 +71,7 @@ public class PlayerRestController {
      * @return Список объектов игроков <p>
      *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
      */
-    @GetMapping
+    @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public List<Player> getAllPlayers(
         @RequestParam(value = "name", required = false) String name,
@@ -104,8 +102,24 @@ public class PlayerRestController {
                 .and(playerService.findAllByLevelLike(minLevel, maxLevel)), pageable).getContent();
     }
 
-    //получение количества всех игроков
-    @GetMapping("/count")
+    /**
+     * Возвращает количество всех игроков согласно фильтра
+     *
+     * @param name
+     * @param title
+     * @param race
+     * @param profession
+     * @param after
+     * @param before
+     * @param banned
+     * @param minExperience
+     * @param maxExperience
+     * @param minLevel
+     * @param maxLevel
+     * @return Количество игроков отвечающих фильтрам <p>
+     *       * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
+    @GetMapping(value = "/count", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public Long getPlayersCount(
             @RequestParam(value = "name", required = false) String name,
@@ -131,7 +145,14 @@ public class PlayerRestController {
                 .and(playerService.findAllByLevelLike(minLevel, maxLevel)));
     }
 
-    //изменение игрока по id
+    /**
+     * Вносит изменения в поля игрока
+     *
+     * @param id
+     * @param player
+     * @return Объект игрока <p>
+     *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
     @PostMapping(value = "{id}", produces = MediaType.APPLICATION_JSON_VALUE)
 //    @PostMapping ("/{id}")
     @ResponseBody
@@ -139,8 +160,15 @@ public class PlayerRestController {
         return ResponseEntity.ok(playerService.updatePlayer(id, player));
     }
 
+    /**
+     * Удаляет игрока
+     *
+     * @param id
+     * @return Объект игрока <p>
+     *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
     //удаление игрока по id
-    @DeleteMapping("/{id}")
+    @DeleteMapping(value = "/{id}", produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public ResponseEntity<Player> deletePlayer(@PathVariable Long id) {
         return ResponseEntity.ok(playerService.deletePlayer(id));

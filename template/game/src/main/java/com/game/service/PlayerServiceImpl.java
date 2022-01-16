@@ -123,7 +123,11 @@ public class PlayerServiceImpl implements PlayerService{
         return player;
     }
 
-    //проверка правильности данных игрока
+    /**
+     * Проверка правильности данных игрока
+     *
+     * @param player объект игрока
+     */
     public void isPlayerValid(Player player) {
         if (player == null)
             throw new BadRequestException("Invalid player");
@@ -135,17 +139,22 @@ public class PlayerServiceImpl implements PlayerService{
         isBirthdayValid(player.getBirthday());
     }
 
-    //проверка id
+    /**
+     * Проверка id
+     *
+     * @param value id
+     * @throws BadRequestException при значении null или меньше 0
+     */
     public void isIdValid(Long value) throws BadRequestException {
         if (value == null || value <= 0)
             throw new BadRequestException("Invalid ID");
     }
 
     /**
-     * проверка значений опыта
+     * Проверка значений опыта
      *
      * @param value значение опыта
-     * @throws BadRequestException при значении опыта мсеньше 0 либо больше <code>MAX_EXPERIENCE</code>
+     * @throws BadRequestException при значении опыта меньше 0 либо больше <code>MAX_EXPERIENCE</code>
      */
     public void isExperienceValid(Integer value) throws BadRequestException {
        if (value == null || value < 0 || value > MAX_EXPERIENCE)
@@ -153,36 +162,58 @@ public class PlayerServiceImpl implements PlayerService{
     }
 
     /**
-     * проверка имени
+     * Проверка имени
      *
      * @param value имя игрова
      * @throws BadRequestException при не корректном значении имени игрока во входном параметре
+     * и длине больше <code>MAX_LENGTH_NAME</code>
      */
     public void isNameValid(String value) throws BadRequestException {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_NAME)
             throw new BadRequestException("Invalid name");
     }
 
-    //проверка титула
+    /**
+     * Проверка титула игрока
+     * @param value титул игрока
+     * @throws BadRequestException при не корректном значении титула игрока во входном параметре
+     * и длине больше <code>MAX_LENGTH_TITLE</code>
+     */
     public void isTitleValid(String value) throws BadRequestException {
         if (value == null || value.isEmpty() || value.length() > MAX_LENGTH_TITLE)
             throw new BadRequestException("Invalid title");
     }
 
-    //проверка расы
-    public void isRaceValid(Race value) {
+    /**
+     * Проверка расы игрока
+     *
+     * @param value раса игрока
+     *@throws BadRequestException при не корректном значении расы игрока во входном параметре
+     */
+    public void isRaceValid(Race value) throws BadRequestException {
         if (value == null)
             throw new BadRequestException("Invalid race");
     }
 
-    //проверка профессии
-    public void isProfessionValid(Profession value) {
+    /**
+     * Проверка профессии игрока
+     *
+     * @param value профессия игрока
+     * @throws BadRequestException при не корректном значении профессии игрока во входном параметре
+     */
+    public void isProfessionValid(Profession value) throws BadRequestException {
         if (value == null)
             throw new BadRequestException("Invalid profession");
     }
 
-    //проверка даты рождения
-    public void isBirthdayValid(Date date) {
+    /**
+     * Проверка даты рождения игрока
+     *
+     * @param date дата рождения игрока
+     * @throws BadRequestException при не корректном значении даты рождения игрока во входном параметре,
+     * даты ранее <code>MIN_BIRTHDAY</code> или позднее <code>MAX_BIRTHDAY</code>
+     */
+    public void isBirthdayValid(Date date) throws BadRequestException {
         if (date == null)
             throw new BadRequestException("Invalid birthday");
 
@@ -192,51 +223,90 @@ public class PlayerServiceImpl implements PlayerService{
             throw new BadRequestException("Birthday is not included");
     }
 
-    //дата по введенному году
+    /**
+     * Возвращает дату в формате <code>Date</code>
+     *
+     * @param year год от рождества Христова
+     * @return дату в формате <code>Date</code>
+     */
     public Date getDateForYear(int year) {
         final Calendar calendar = Calendar.getInstance();
         calendar.set(Calendar.YEAR, year);
         return calendar.getTime();
     }
 
-    //год по введенной дате
-    public int getYearFromDate(Date date) {
-        final Calendar calendar = Calendar.getInstance();
-        calendar.setTime(date);
-        return calendar.get(Calendar.YEAR);
-    }
-
-    //возвращает текущий уровень игрока
+    /**
+     * Определяет уровень игрока
+     *
+     * @param experience текущий опыт
+     * @return текущий уровень игрока
+     */
     public Integer getCurrentLevel(Integer experience) {
         return ((int)Math.sqrt(2500 + 200 * experience) - 50) / 100;
     }
 
-    //опыт до следующего уровня
+    /**
+     * Опредляет уровень до следующего уровня игрока
+     *
+     * @param experience текущий опыт
+     * @param level текущий уровень
+     * @return величину опыта, необходимого для перехода на аледующий уровень
+     */
     public Integer getExperienceUntilNextLevel(Integer experience, Integer level) {
         return 50 * (level + 1) * (level + 2) - experience;
     }
 
-    //написание запросов по спецификациям
+    /**
+     * Спецификация объекта игрока по фильтру имени
+     *
+     * @param name имя согласно фильтра
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByNameLike(String name) {
         return (root, query, criteriaBuilder) ->
             name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру титула
+     *
+     * @param title титул согласно фильтра
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByTitleLike(String title) {
         return (root, query, criteriaBuilder) ->
             title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру расы
+     *
+     * @param race раса согласно фильтра
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByRaceLike(Race race) {
         return (root, query, criteriaBuilder) ->
             race == null ? null : criteriaBuilder.equal(root.get("race"), race);
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру профессий
+     *
+     * @param profession профессия согласно фильтра
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByProfessionLike(Profession profession) {
         return (root, query, criteriaBuilder) ->
             profession == null ? null : criteriaBuilder.equal(root.get("profession"), profession);
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру даты рождения
+     *
+     * @param after дата с
+     * @param before дата по
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByBirtdayLike(Long after, Long before) {
         return (root, query, criteriaBuilder) -> {
             if (after == null && before == null)
@@ -252,6 +322,12 @@ public class PlayerServiceImpl implements PlayerService{
         };
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру баннер
+     *
+     * @param isBanned статус параметра баннер
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByBannedLike(Boolean isBanned) {
         return (root, query, criteriaBuilder) -> {
             if (isBanned == null)
@@ -264,6 +340,13 @@ public class PlayerServiceImpl implements PlayerService{
         };
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру опыта
+     *
+     * @param min опыт с
+     * @param max опыт до
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByExperienceLike(Integer min, Integer max) {
         return (root, query, criteriaBuilder) -> {
             if (min == null && max == null)
@@ -279,6 +362,13 @@ public class PlayerServiceImpl implements PlayerService{
         };
     }
 
+    /**
+     * Спецификация объекта игрока по фильтру уровня
+     *
+     * @param min уровень с
+     * @param max уровень до
+     * @return спецификация объекта игрока
+     */
     public Specification<Player> findAllByLevelLike(Integer min, Integer max) {
         return (root, query, criteriaBuilder) -> {
             if (min == null && max == null)
@@ -291,21 +381,6 @@ public class PlayerServiceImpl implements PlayerService{
                 return criteriaBuilder.greaterThanOrEqualTo(root.get("level"), min);
 
             return criteriaBuilder.between(root.get("level"), min, max);
-        };
-    }
-
-    public Specification<Player> findAllByUntilNextLevelLike(Integer min, Integer max) {
-        return (root, query, criteriaBuilder) -> {
-            if (min == null && max == null)
-                return null;
-
-            if (min == null)
-                return criteriaBuilder.lessThanOrEqualTo(root.get("untilNextLevel"), max);
-
-            if (max == null)
-                return criteriaBuilder.greaterThanOrEqualTo(root.get("untilNextLevel"), min);
-
-            return criteriaBuilder.between(root.get("untilNextLevel"), min, max);
         };
     }
 }
