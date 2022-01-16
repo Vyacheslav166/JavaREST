@@ -31,7 +31,12 @@ public class PlayerServiceImpl implements PlayerService{
         this.playerRepository = playerRepository;
     }
 
-    //создание игрока
+    /**
+     * Создает нового игрока
+     *
+     * @param player
+     * @return объект игрока
+     */
     @Override
     public Player createPlayer(Player player) {
         isPlayerValid(player);
@@ -45,26 +50,49 @@ public class PlayerServiceImpl implements PlayerService{
         return playerRepository.save(player);
     }
 
-    //получение игрока по id
+    /**
+     * Получение игрока по id
+     *
+     * @param id
+     * @return объект игрока
+     */
     @Override
     public Player getPlayerById(Long id) {
         isIdValid(id);
         return playerRepository.findById(id).orElseThrow(() ->
-            new NotFoundException("Player not found!"));
+                new NotFoundException("Player not found!"));
     }
 
-    //получение всех игроков по фильтрам
+    /**
+     * Отображает страницу игроков согласно фильтрам
+     *
+     * @param specification
+     * @param pageable
+     * @return страницу игроков
+     */
     @Override
     public Page<Player> getAllPlayers(Specification<Player> specification, Pageable pageable) {
         return playerRepository.findAll(specification, pageable);
     }
 
+    /**
+     * Возвращает количество игроков согласной фильтров
+     *
+     * @param specification
+     * @return количество игроков
+     */
     @Override
     public Long getPlayersCount(Specification<Player> specification) {
         return playerRepository.count(specification);
     }
 
-    //изменение игрока
+    /**
+     * Изменяет значения полей игрока
+     *
+     * @param id
+     * @param newPlayer объект игрока с изменненными полями
+     * @return объект игрока
+     */
     @Override
     public Player updatePlayer(Long id, Player newPlayer) {
         Player oldPlayer = getPlayerById(id);
@@ -115,7 +143,12 @@ public class PlayerServiceImpl implements PlayerService{
         return playerRepository.saveAndFlush(oldPlayer);
     }
 
-    //удаление игрока
+    /**
+     * Удаляет игрока
+     *
+     * @param id
+     * @return объект игрока
+     */
     @Override
     public Player deletePlayer(Long id) {
         Player player = getPlayerById(id);
@@ -157,8 +190,8 @@ public class PlayerServiceImpl implements PlayerService{
      * @throws BadRequestException при значении опыта меньше 0 либо больше <code>MAX_EXPERIENCE</code>
      */
     public void isExperienceValid(Integer value) throws BadRequestException {
-       if (value == null || value < 0 || value > MAX_EXPERIENCE)
-           throw new BadRequestException("Invalid experience");
+        if (value == null || value < 0 || value > MAX_EXPERIENCE)
+            throw new BadRequestException("Invalid experience");
     }
 
     /**
@@ -264,7 +297,7 @@ public class PlayerServiceImpl implements PlayerService{
      */
     public Specification<Player> findAllByNameLike(String name) {
         return (root, query, criteriaBuilder) ->
-            name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
+                name == null ? null : criteriaBuilder.like(root.get("name"), "%" + name + "%");
     }
 
     /**
@@ -275,7 +308,7 @@ public class PlayerServiceImpl implements PlayerService{
      */
     public Specification<Player> findAllByTitleLike(String title) {
         return (root, query, criteriaBuilder) ->
-            title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
+                title == null ? null : criteriaBuilder.like(root.get("title"), "%" + title + "%");
     }
 
     /**
@@ -286,7 +319,7 @@ public class PlayerServiceImpl implements PlayerService{
      */
     public Specification<Player> findAllByRaceLike(Race race) {
         return (root, query, criteriaBuilder) ->
-            race == null ? null : criteriaBuilder.equal(root.get("race"), race);
+                race == null ? null : criteriaBuilder.equal(root.get("race"), race);
     }
 
     /**
@@ -297,7 +330,7 @@ public class PlayerServiceImpl implements PlayerService{
      */
     public Specification<Player> findAllByProfessionLike(Profession profession) {
         return (root, query, criteriaBuilder) ->
-            profession == null ? null : criteriaBuilder.equal(root.get("profession"), profession);
+                profession == null ? null : criteriaBuilder.equal(root.get("profession"), profession);
     }
 
     /**
