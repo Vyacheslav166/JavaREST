@@ -31,8 +31,8 @@ public class PlayerRestController {
     /**
      * Создает игрока
      *
-     * @param player данные игрока
-     * @return объект сгрока. <p>
+     * @param player Данные игрока
+     * @return Объект игрока. <p>
      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
      */
     @PostMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -40,13 +40,39 @@ public class PlayerRestController {
         return ResponseEntity.ok(playerService.createPlayer(player));
     }
 
-    //получение игрока по id
+    /**
+     * Возвращает игрока по id
+     *
+     * @param id игрока
+     * @return Объект игрока. <p>
+     *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
     @GetMapping(value = "/{id}")
     @ResponseBody
     public ResponseEntity<Player> getPlayerById(@PathVariable Long id) {
         return  ResponseEntity.ok(playerService.getPlayerById(id));
     }
-    //получение всех игроков
+
+    /**
+     * Возвращает список всех игроков
+     *
+     * @param name
+     * @param title
+     * @param race
+     * @param profession
+     * @param after
+     * @param before
+     * @param banned
+     * @param minExperience
+     * @param maxExperience
+     * @param minLevel
+     * @param maxLevel
+     * @param order
+     * @param pageNumber
+     * @param pageSize
+     * @return Список объектов игроков <p>
+     *      * При отсутствии входных данных возвращает пустой ответ с HTTP статусом <code>400</code>
+     */
     @GetMapping
     @ResponseBody
     public List<Player> getAllPlayers(
